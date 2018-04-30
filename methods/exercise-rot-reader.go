@@ -21,12 +21,15 @@ func rot13(b byte) byte {
 	}
 }
 
-func (r rot13Reader) Read(p []byte) (n int, err error) {
-	n, err = r.r.Read(p)
+func (r rot13Reader) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	if err != nil {
+		return 0, err
+	}
 	for i := 0; i < n; i++ {
 		p[i] = rot13(p[i])
 	}
-	return
+	return n, nil
 }
 
 func main() {
