@@ -50,32 +50,29 @@ func Crawl(url string, depth int, fetcher Fetcher) {
 		return
 	}
 	fmt.Printf("found: %s %q\n", url, body)
-	done := make(chan bool)
+
+	done := make(chan int)
 	for i, u := range urls {
 		fmt.Printf("-> Crawling child %v/%v of %v : %v.\n", i, len(urls), url, u)
-		go func(url string) {
+		go func(idx int, url string) {
 			Crawl(url, depth-1, fetcher)
-			done <- true
-		}(u)
+			done <- idx
+		}(i, u)
 	}
-	for i, u := range urls {
-		fmt.Printf("<- [%v] %v/%v Waiting for child %v.\n", url, i, len(urls), u)
-		<-done
+	for n := range urls {
+		idx := <-done
+		u := urls[idx]
+		fmt.Printf("<- [%v] %v/%v Finished crawling child %v.\n", url, n+1, len(urls), u)
 	}
-	fmt.Printf("<- Done with %v\n", url)
+
+	for _, u := range urls {
+		Crawl(u, depth-1, fetcher)
+	}
+	return
 }
 
 func main() {
-	Crawl("http://golang.org/", 4, fetcher)
-
-	fmt.Println("Fetching stats\n--------------")
-	for url, err := range fetched.m {
-		if err != nil {
-			fmt.Printf("%v failed: %v\n", url, err)
-		} else {
-			fmt.Printf("%v was fetched\n", url)
-		}
-	}
+	Crawl("https://golang.org/", 4, fetcher)
 }
 
 // fakeFetcher is Fetcher that returns canned results.
@@ -95,34 +92,34 @@ func (f fakeFetcher) Fetch(url string) (string, []string, error) {
 
 // fetcher is a populated fakeFetcher.
 var fetcher = fakeFetcher{
-	"http://golang.org/": &fakeResult{
+	"https://golang.org/": &fakeResult{
 		"The Go Programming Language",
 		[]string{
-			"http://golang.org/pkg/",
-			"http://golang.org/cmd/",
+			"https://golang.org/pkg/",
+			"https://golang.org/cmd/",
 		},
 	},
-	"http://golang.org/pkg/": &fakeResult{
+	"https://golang.org/pkg/": &fakeResult{
 		"Packages",
 		[]string{
-			"http://golang.org/",
-			"http://golang.org/cmd/",
-			"http://golang.org/pkg/fmt/",
-			"http://golang.org/pkg/os/",
+			"https://golang.org/",
+			"https://golang.org/cmd/",
+			"https://golang.org/pkg/fmt/",
+			"https://golang.org/pkg/os/",
 		},
 	},
-	"http://golang.org/pkg/fmt/": &fakeResult{
+	"https://golang.org/pkg/fmt/": &fakeResult{
 		"Package fmt",
 		[]string{
-			"http://golang.org/",
-			"http://golang.org/pkg/",
+			"https://golang.org/",
+			"https://golang.org/pkg/",
 		},
 	},
-	"http://golang.org/pkg/os/": &fakeResult{
+	"https://golang.org/pkg/os/": &fakeResult{
 		"Package os",
 		[]string{
-			"http://golang.org/",
-			"http://golang.org/pkg/",
+			"https://golang.org/",
+			"https://golang.org/pkg/",
 		},
 	},
 }
